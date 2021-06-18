@@ -1,73 +1,67 @@
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
+#include <WiFiUdp.h>
 #include "debug.h"
+#include "wifi.h"
 
-#ifndef STASSID
-#define STASSID "RcCtrl1"
-#define STAPSK  "thereisnospoon"
-#endif
+const char *ssid     = "RcCtrl1";
+const char *password = "password1234567";
 
-const char* ssid     = STASSID;
-const char* password = STAPSK;
+//WiFiServer server(80);
+WiFiUDP UDP;
+IPAddress IP(192,168,4,15);
+IPAddress mask = (255, 255, 255, 0);
+#define UDP_PORT 4210
 
-const char* host = "192.168.4.1";
-const uint16_t port = 3000;
-
-ESP8266WiFiMulti WiFiMulti;
+// UDP Buffer
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 
 void WifiInit(void)
 {
-  // We start by connecting to a WiFi network
-  WiFi.mode(WIFI_STA);
-  WiFiMulti.addAP(ssid, password);
-
-  Serial.println();
-  Serial.println();
-  Serial.print("Wait for WiFi... ");
-
-  while (WiFiMulti.run() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  delay(500);
+  dbgPrintf("\nConfiguring access point...\n");
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(IP, IP, mask);
+  WiFi.softAP(ssid, password);
   
+  IPAddress myIP = WiFi.softAPIP();
+  dbgPrintf("AP IP address: %d.%d.%d.%d\n",myIP[0],myIP[1],myIP[2],myIP[3]);
+
+  uint8_t mac[6];
+  WiFi.softAPmacAddress(mac);
+  dbgPrintf("MAC address = %02x:%02x:%02x:%02x:%02x:%02x\n", 
+    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  
+  // Begin listening to UDP port
+  UDP.begin(UDP_PORT);
+  dbgPrintf("Listening on UDP port %d\n", UDP_PORT);
+  //server.begin();
+  //dbgPrintf("Server started\n");
+}
+
+void WifiGetData() 
+{
+  int len;
+ 
+  // Receive packet
+  len = UDP.parsePacket();
+  if (len > 0)
+  {
+    UDP.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    dbgPrintf("H:%+4d V:%+4d\n",(int8_t)packetBuffer[0],(int8_t)packetBuffer[1]);
+  }
+  /*
+  WiFiClient client = server.available();
+  if (!client)
+  {
+    return;
+  }
+  String request = client.readStringUntil('\r');
+  dbgPrintf("From: '%s'", request);
+  client.flush();
+  dbgPrintf("To  : '%s'", client.println(request + "ca" + "\r"));
+  */
 }
 
 void WifiProcess(void)
 {
-  Serial.print("connecting to ");
-  Serial.print(host);
-  Serial.print(':');
-  Serial.println(port);
-
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
-
-  if (!client.connect(host, port)) {
-    Serial.println("connection failed");
-    Serial.println("wait 5 sec...");
-    delay(5000);
-    return;
-  }
-
-  // This will send the request to the server
-  client.println("hello from ESP8266");
-
-  //read back one line from server
-  Serial.println("receiving from remote server");
-  String line = client.readStringUntil('\r');
-  Serial.println(line);
-
-  Serial.println("closing connection");
-  client.stop();
-
-  Serial.println("wait 5 sec...");
-  delay(5000);
-
+  WifiGetData();
 }
