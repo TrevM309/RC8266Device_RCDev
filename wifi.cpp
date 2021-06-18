@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include "debug.h"
+#include "servos.h"
 #include "wifi.h"
 
 const char *ssid     = "RcCtrl1";
@@ -46,19 +47,10 @@ void WifiGetData()
   if (len > 0)
   {
     UDP.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    ch_pos[0] = 100 + (int8_t)packetBuffer[1];
+    ch_pos[1] = 100 + (int8_t)packetBuffer[0];
     dbgPrintf("H:%+4d V:%+4d\n",(int8_t)packetBuffer[0],(int8_t)packetBuffer[1]);
   }
-  /*
-  WiFiClient client = server.available();
-  if (!client)
-  {
-    return;
-  }
-  String request = client.readStringUntil('\r');
-  dbgPrintf("From: '%s'", request);
-  client.flush();
-  dbgPrintf("To  : '%s'", client.println(request + "ca" + "\r"));
-  */
 }
 
 void WifiProcess(void)
