@@ -7,21 +7,28 @@
 const char *ssid     = "RcCtrl1";
 const char *password = "password1234567";
 
-//WiFiServer server(80);
 WiFiUDP UDP;
-IPAddress IP(192,168,4,15);
-IPAddress mask = (255, 255, 255, 0);
+IPAddress IP(192, 168, 4, 15);
+IPAddress mask(255, 255, 255, 0);
 #define UDP_PORT 4210
 
 // UDP Buffer
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 
+// Local functions
+void WifiGetData() ;
+void scanWifi(int& ch);
+
+// Global function to be called during setup()
 void WifiInit(void)
 {
+  int chann = 6;
+
+  scanWifi(chann);
   dbgPrintf("\nConfiguring access point...\n");
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IP, IP, mask);
-  WiFi.softAP(ssid, password);
+  WiFi.softAP(ssid, password,chann);
   
   IPAddress myIP = WiFi.softAPIP();
   dbgPrintf("AP IP address: %d.%d.%d.%d\n",myIP[0],myIP[1],myIP[2],myIP[3]);
@@ -34,10 +41,15 @@ void WifiInit(void)
   // Begin listening to UDP port
   UDP.begin(UDP_PORT);
   dbgPrintf("Listening on UDP port %d\n", UDP_PORT);
-  //server.begin();
-  //dbgPrintf("Server started\n");
 }
 
+// Global function to be called during loop()
+void WifiProcess(void)
+{
+  WifiGetData();
+}
+
+// receive data over UDP
 void WifiGetData() 
 {
   int len;
@@ -53,7 +65,57 @@ void WifiGetData()
   }
 }
 
-void WifiProcess(void)
+void scanWifi(int& ch)
 {
-  WifiGetData();
+  dbgPrintf("\n--------------------\n");
+  dbgPrintf("scan start");
+
+  int n = WiFi.scanNetworks();
+  int used[14];
+  int gap[14];
+  int start[14];
+  int gaps = 0;
+  int x; 
+  int i;
+  for (i = 0; i < 14; ++i)
+    used[i] = 0;
+  dbgPrintf(" done\n");
+  if (n == 0)
+    dbgPrintf("no networks found\n");
+  else
+  {
+    dbgPrintf(" %d networks found:\n",n);
+    for (i = 0; i < n; ++i)
+    {
+      ch = WiFi.channel(i);
+      if (ch <= 14)
+        used[ch-1] = 1;
+      dbgPrintf("  %d: ch%d: rssi%d: ssid'%s' %c\n",
+        i+1,ch,WiFi.RSSI(i),WiFi.SSID(i),(WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*");
+      delay(10);
+    }
+  }
+  // array used now contains which channels are used
+  for (i=0; i < 14; i++)
+  {
+    if (used[i] == 0)
+    {
+       start[gaps]=i+1;
+       for(gap[gaps] = 0; i < 14 && used[i] == 0; i++, gap[gaps]++)
+        ;
+       gaps++;
+    }
+  }
+  dbgPrintf(" %d gaps\n",gaps);
+  for (i=0,x=0; i < gaps; i++)
+  {
+    if (gap[i] > x)
+      x = gap[i];
+    dbgPrintf(" %d ch:%d size:%d\n",i,start[i],gap[i]);
+  }
+  dbgPrintf(" Max gap:%d\n",x);
+  for (i = 0; i < 14 && gap[i] < x; i++)
+    ;
+  ch = start[i] + (gap[i]/2);
+  dbgPrintf(" Channel = %d\n",ch);
 }
