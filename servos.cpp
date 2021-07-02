@@ -24,7 +24,7 @@ Servo ThroS;  //ch4
 
 Servo *ChS[4] = { &AileS, &ElevS, &RuddS, &ThroS };
 
-#define DBGPRINT(a) dbgPrintf a;
+#define DBGPRINT(a) //dbgPrintf a;
 
 void doServo(int val, Servo *serv, int which);
 

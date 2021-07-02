@@ -4,7 +4,7 @@
 #include "servos.h"
 #include "wifi.h"
 
-const char *ssid     = "RcCtrl1";
+const char *ssid     = "RcCtrl2";
 const char *password = "password1234567";
 
 WiFiUDP UDP;
@@ -15,9 +15,14 @@ IPAddress mask(255, 255, 255, 0);
 // UDP Buffer
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 
+// last time (millis) since ADC was read
+unsigned long last = 0;
+int Vbat = 0;
+
 // Local functions
-void WifiGetData() ;
+void WifiGetData(void);
 void scanWifi(int& ch);
+void readAdc(void);
 
 // Global function to be called during setup()
 void WifiInit(void)
@@ -29,6 +34,7 @@ void WifiInit(void)
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IP, IP, mask);
   WiFi.softAP(ssid, password,chann);
+  dbgPrintf("SSID:%s pass:%s\n",ssid,password);
   
   IPAddress myIP = WiFi.softAPIP();
   dbgPrintf("AP IP address: %d.%d.%d.%d\n",myIP[0],myIP[1],myIP[2],myIP[3]);
@@ -46,11 +52,28 @@ void WifiInit(void)
 // Global function to be called during loop()
 void WifiProcess(void)
 {
+  readAdc();
   WifiGetData();
 }
 
+// local function to read Battery Voltage
+void readAdc(void)
+{
+  unsigned long Tnow = millis();
+  if ((Tnow < last) || ((Tnow - last) > 1000))
+  {
+    int Adc;
+
+    last = Tnow;
+    Adc = analogRead(A0);
+    Vbat = 1100 * Adc / 1023;
+    // every second
+    dbgPrintf("ADC:%lx V:%d\n",Adc,Vbat);
+  }
+}
+
 // receive data over UDP
-void WifiGetData() 
+void WifiGetData(void) 
 {
   int len;
  
@@ -65,6 +88,7 @@ void WifiGetData()
   }
 }
 
+// scan wifi, return channel in biggest free gap
 void scanWifi(int& ch)
 {
   dbgPrintf("\n--------------------\n");
