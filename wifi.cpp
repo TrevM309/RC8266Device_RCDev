@@ -4,13 +4,15 @@
 #include "servos.h"
 #include "wifi.h"
 
+#define UDP_RX_PORT 4210
+#define UDP_TX_PORT 4211
+#define NUMCL 5
 const char *ssid     = "RcCtrl2";
 const char *password = "password1234567";
 
 WiFiUDP UDP;
 IPAddress IP(192, 168, 4, 15);
 IPAddress mask(255, 255, 255, 0);
-#define UDP_PORT 4210
 
 // UDP Buffer
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
@@ -45,8 +47,8 @@ void WifiInit(void)
     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   
   // Begin listening to UDP port
-  UDP.begin(UDP_PORT);
-  dbgPrintf("Listening on UDP port %d\n", UDP_PORT);
+  UDP.begin(UDP_RX_PORT);
+  dbgPrintf("Listening on UDP port %d\n", UDP_RX_PORT);
 }
 
 // Global function to be called during loop()
@@ -85,6 +87,10 @@ void WifiGetData(void)
     ch_pos[0] = 100 + (int8_t)packetBuffer[1];
     ch_pos[1] = 100 + (int8_t)packetBuffer[0];
     dbgPrintf("H:%+4d V:%+4d\n",(int8_t)packetBuffer[0],(int8_t)packetBuffer[1]);
+    UDP.beginPacket(UDP.remoteIP(), UDP_TX_PORT);
+    UDP.write(Vbat >> 8);
+    UDP.write(Vbat & 0xff);
+    UDP.endPacket();
   }
 }
 
