@@ -7,7 +7,7 @@
 #define UDP_RX_PORT 4210
 #define UDP_TX_PORT 4211
 #define NUMCL 5
-const char *ssid     = "RcCtrl2";
+const char *ssid     = "RcCtrl3";
 const char *password = "password1234567";
 
 WiFiUDP UDP;

@@ -3,10 +3,14 @@
 #include "servos.h"
 
 /* identify Servo GPIOs */
-const int AileG = 16; //CH1 Right Horiz can't use 2
-const int ElevG = 13; //CH2 Right Vert ok
+//const int AileG = 16; //CH1 Right Horiz can't use 2
+//const int ElevG = 13; //CH2 Right Vert ok
+//const int RuddG = 12; //CH3 Left Horiz ok
+//const int ThroG = 14; //CH4 Left Vert ok
+const int AileG = 14; //CH1 Right Horiz can't use 2
+const int ElevG = 16; //CH2 Right Vert ok
 const int RuddG = 12; //CH3 Left Horiz ok
-const int ThroG = 14; //CH4 Left Vert ok
+const int ThroG = 13; //CH4 Left Vert ok
 
 /* FlySky type pulse width values */
 /* Web page servo values are 0 to 200 */
