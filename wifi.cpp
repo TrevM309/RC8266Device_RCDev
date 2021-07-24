@@ -7,6 +7,7 @@
 #define UDP_RX_PORT 4210
 #define UDP_TX_PORT 4211
 #define NUMCL 5
+// 1 original proto, 2 Tranaller
 const char *ssid     = "RcCtrl3";
 const char *password = "password1234567";
 
@@ -70,7 +71,7 @@ void readAdc(void)
     Adc = analogRead(A0);
     Vbat = 1100 * Adc / 1023;
     // every second
-    dbgPrintf("ADC:%lx V:%d\n",Adc,Vbat);
+    //dbgPrintf("ADC:%lx V:%d\n",Adc,Vbat);
   }
 }
 
@@ -78,15 +79,22 @@ void readAdc(void)
 void WifiGetData(void) 
 {
   int len;
+  uint8_t x;
  
   // Receive packet
   len = UDP.parsePacket();
   if (len > 0)
   {
     UDP.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-    ch_pos[0] = 100 + (int8_t)packetBuffer[1];
-    ch_pos[1] = 100 + (int8_t)packetBuffer[0];
-    dbgPrintf("H:%+4d V:%+4d\n",(int8_t)packetBuffer[0],(int8_t)packetBuffer[1]);
+    for (x = 0; x < 4; x++)
+    {
+      ch_pos[x] = 100 + (int8_t)packetBuffer[x];
+      dbgPrintf("%d:%3d ", x, ch_pos[x]);
+    }
+    dbgPrintf("\n");
+    //ch_pos[0] = 100 + (int8_t)packetBuffer[1];
+    //ch_pos[1] = 100 + (int8_t)packetBuffer[0];
+    //dbgPrintf("H:%+4d V:%+4d\n",(int8_t)packetBuffer[0],(int8_t)packetBuffer[1]);
     UDP.beginPacket(UDP.remoteIP(), UDP_TX_PORT);
     UDP.write(Vbat >> 8);
     UDP.write(Vbat & 0xff);
